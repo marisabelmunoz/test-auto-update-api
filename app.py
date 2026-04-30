@@ -11,7 +11,7 @@ app = Flask(__name__)
 APP_DIR          = Path(__file__).parent.resolve()
 VERSION_FILE     = APP_DIR / "version.txt"
 REMOTE_VERSION_URL = (
-    "https://raw.githubusercontent.com/marisabelmunoz/test-update-app/main/version.txt"
+    "https://raw.githubusercontent.com/marisabelmunoz/test-auto-update-api/refs/heads/main/version.txt"
 )
 GIT_PULL_TIMEOUT = 30  # seconds
 
