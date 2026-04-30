@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App Updater</title>
+  <style>
+    /* ── Google Font ─────────────────────────────────────────────────── */
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+    /* ── Design tokens ───────────────────────────────────────────────── */
+    :root {
+      --bg:           #f0f4ff;
+      --card:         #ffffff;
+      --shadow:       0 8px 32px rgba(60,80,160,0.10);
+      --radius:       20px;
+      --green:        #22c55e;
+      --green-bg:     #dcfce7;
+      --yellow:       #f59e0b;
+      --yellow-bg:    #fef9c3;
+      --red:          #ef4444;
+      --red-bg:       #fee2e2;
+      --blue:         #3b82f6;
+      --blue-dark:    #1d4ed8;
+      --text:         #1e293b;
+      --muted:        #64748b;
+      --border:       #e2e8f0;
+      --font:         'Nunito', 'Segoe UI', Arial, sans-serif;
+    }
+
+    /* ── Reset / base ────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    /* ── Card ────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 48px 40px;
+      max-width: 620px;
+      width: 100%;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────── */
+    .app-title {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .app-subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 36px;
+    }
+
+    /* ── Version badge ───────────────────────────────────────────────── */
+    .version-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 16px 24px;
+      margin-bottom: 28px;
+      border: 2px solid var(--border);
+    }
+    .version-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .version-number {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--blue);
+    }
+
+    /* ── Status pill ─────────────────────────────────────────────────── */
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 50px;
+      padding: 14px 24px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-bottom: 32px;
+      border: 2.5px solid transparent;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .status-pill .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-pill.idle      { background: var(--bg);        border-color: var(--border);  color: var(--muted);  }
+    .status-pill.good      { background: var(--green-bg);  border-color: var(--green);   color: #166534; }
+    .status-pill.update    { background: var(--yellow-bg); border-color: var(--yellow);  color: #78350f; }
+    .status-pill.error     { background: var(--red-bg);    border-color: var(--red);     color: #991b1b; }
+    .status-pill.idle   .dot { background: var(--muted);   }
+    .status-pill.good   .dot { background: var(--green);   }
+    .status-pill.update .dot { background: var(--yellow);  }
+    .status-pill.error  .dot { background: var(--red);     }
+
+    /* ── Buttons ─────────────────────────────────────────────────────── */
+    .btn-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 62px;
+      min-width: 200px;
+      border-radius: 14px;
+      border: none;
+      font-family: var(--font);
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.12s, opacity 0.2s, box-shadow 0.2s;
+      flex: 1 1 200px;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .btn-check {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(59,130,246,0.35);
+    }
+    .btn-check:hover:not(:disabled) {
+      background: var(--blue-dark);
+      box-shadow: 0 6px 22px rgba(59,130,246,0.45);
+    }
+    .btn-update {
+      background: var(--yellow);
+      color: #1c1008;
+      box-shadow: 0 4px 16px rgba(245,158,11,0.35);
+    }
+    .btn-update:hover:not(:disabled) {
+      background: #d97706;
+      box-shadow: 0 6px 22px rgba(245,158,11,0.45);
+    }
+    .btn-update.hidden { display: none; }
+
+    /* ── Spinner ─────────────────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 3px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .spinner.dark {
+      border-color: rgba(0,0,0,0.15);
+      border-top-color: #1c1008;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Progress log ────────────────────────────────────────────────── */
+    .log-box {
+      background: #0f172a;
+      color: #94a3b8;
+      font-family: 'Courier New', monospace;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      border-radius: 14px;
+      padding: 20px;
+      min-height: 120px;
+      max-height: 280px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      display: none;
+      margin-bottom: 20px;
+    }
+    .log-box.visible { display: block; }
+    .log-box .ok   { color: #4ade80; }
+    .log-box .err  { color: #f87171; }
+    .log-box .warn { color: #fbbf24; }
+
+    /* ── Success / error banners ─────────────────────────────────────── */
+    .banner {
+      border-radius: 14px;
+      padding: 18px 22px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .banner.visible      { display: flex; }
+    .banner.success      { background: var(--green-bg);  color: #166534; border: 2px solid var(--green); }
+    .banner.fail         { background: var(--red-bg);    color: #991b1b; border: 2px solid var(--red);   }
+    .banner.warn-banner  { background: var(--yellow-bg); color: #78350f; border: 2px solid var(--yellow);}
+
+    /* ── Remote version line ─────────────────────────────────────────── */
+    .remote-info {
+      text-align: center;
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .remote-info span { color: var(--text); }
+
+    /* ── Footer ──────────────────────────────────────────────────────── */
+    .footer {
+      margin-top: 32px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- ── Header ── -->
+  <div class="app-title">🚀 App Updater</div>
+  <div class="app-subtitle">Keep your app up to date — one click!</div>
+
+  <!-- ── Local version ── -->
+  <div class="version-box">
+    <span class="version-label">Your version</span>
+    <span class="version-number" id="localVer">{{ local_version }}</span>
+  </div>
+
+  <!-- ── Status pill ── -->
+  <div class="status-pill idle" id="statusPill">
+    <div class="dot"></div>
+    <span id="statusText">Press "Check for Updates" to get started</span>
+  </div>
+
+  <!-- ── Remote version info (hidden until checked) ── -->
+  <div class="remote-info" id="remoteInfo" style="display:none">
+    Latest version available: <span id="remoteVer"></span>
+  </div>
+
+  <!-- ── Buttons ── -->
+  <div class="btn-row">
+    <button class="btn btn-check" id="btnCheck" onclick="checkUpdate()">
+      🔍 Check for Updates
+    </button>
+    <button class="btn btn-update hidden" id="btnUpdate" onclick="performUpdate()">
+      🔄 Update Now
+    </button>
+  </div>
+
+  <!-- ── Banners ── -->
+  <div class="banner" id="bannerSuccess">
+    ✅ <span id="bannerSuccessMsg">Update complete!</span>
+  </div>
+  <div class="banner fail" id="bannerFail">
+    ❌ <span id="bannerFailMsg"></span>
+  </div>
+
+  <!-- ── Log output ── -->
+  <div class="log-box" id="logBox"></div>
+
+</div><!-- /.card -->
+
+<div class="footer">Runs only on your computer — no data sent anywhere else.</div>
+
+<script>
+/* ── State ──────────────────────────────────────────────────────────────── */
+let updating = false;
+
+/* ── Helper: set status pill ─────────────────────────────────────────────── */
+function setStatus(cls, emoji, text) {
+  const pill = document.getElementById('statusPill');
+  pill.className = 'status-pill ' + cls;
+  document.getElementById('statusText').textContent = emoji + '  ' + text;
+}
+
+/* ── Helper: hide all banners ────────────────────────────────────────────── */
+function clearBanners() {
+  document.getElementById('bannerSuccess').classList.remove('visible');
+  document.getElementById('bannerFail').classList.remove('visible');
+}
+
+/* ── Helper: append a line to the log box ───────────────────────────────── */
+function logLine(text) {
+  const box = document.getElementById('logBox');
+  box.classList.add('visible');
+  const line = document.createElement('span');
+  if (text.startsWith('ERROR') || text.startsWith('❌')) {
+    line.className = 'err';
+  } else if (text.startsWith('WARNING') || text.startsWith('⚠️')) {
+    line.className = 'warn';
+  } else if (text.includes('✅') || text.toLowerCase().includes('success')) {
+    line.className = 'ok';
+  }
+  line.textContent = text + '\n';
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ── Check for updates ───────────────────────────────────────────────────── */
+async function checkUpdate() {
+  if (updating) return;
+
+  clearBanners();
+  document.getElementById('logBox').classList.remove('visible');
+  document.getElementById('logBox').innerHTML = '';
+
+  const btnCheck = document.getElementById('btnCheck');
+  const btnUpdate = document.getElementById('btnUpdate');
+  btnCheck.disabled = true;
+  btnCheck.innerHTML = '<span class="spinner"></span> Checking…';
+  btnUpdate.classList.add('hidden');
+  document.getElementById('remoteInfo').style.display = 'none';
+  setStatus('idle', '🔄', 'Checking GitHub for updates…');
+
+  try {
+    const resp = await fetch('/check-update');
+    const data = await resp.json();
+
+    document.getElementById('localVer').textContent = data.local_version || '—';
+
+    if (data.status === 'error') {
+      setStatus('error', '❌', data.message || 'Could not check for updates.');
+      document.getElementById('bannerFail').classList.add('visible');
+      document.getElementById('bannerFailMsg').textContent = data.message || 'Unknown error.';
+    } else if (data.status === 'up_to_date') {
+      setStatus('good', '✅', 'You are up to date!');
+      document.getElementById('remoteVer').textContent = data.remote_version;
+      document.getElementById('remoteInfo').style.display = 'block';
+    } else if (data.status === 'update_available') {
+      setStatus('update', '⚠️', `Version ${data.remote_version} is available!`);
+      document.getElementById('remoteVer').textContent = data.remote_version;
+      document.getElementById('remoteInfo').style.display = 'block';
+      btnUpdate.classList.remove('hidden');
+    }
+  } catch (err) {
+    setStatus('error', '❌', 'Could not reach the server. Is the app running?');
+  }
+
+  btnCheck.disabled = false;
+  btnCheck.innerHTML = '🔍 Check for Updates';
+}
+
+/* ── Perform update ──────────────────────────────────────────────────────── */
+async function performUpdate() {
+  if (updating) return;
+  updating = true;
+
+  clearBanners();
+  const logBox = document.getElementById('logBox');
+  logBox.innerHTML = '';
+  logBox.classList.add('visible');
+
+  const btnCheck  = document.getElementById('btnCheck');
+  const btnUpdate = document.getElementById('btnUpdate');
+  btnCheck.disabled  = true;
+  btnUpdate.disabled = true;
+  btnUpdate.innerHTML = '<span class="spinner dark"></span> Updating…';
+  setStatus('idle', '🔄', 'Downloading update — please wait…');
+
+  let success = false;
+
+  try {
+    const resp = await fetch('/perform-update');
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE lines look like  "data: some text\n\n"
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete last chunk
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const msg = line.slice(6);
+
+        if (msg === 'DONE_SUCCESS') {
+          success = true;
+        } else if (msg === 'DONE_ERROR') {
+          // handled below
+        } else {
+          logLine(msg);
+        }
+      }
+    }
+  } catch (err) {
+    logLine('ERROR: Lost connection to app server.');
+  }
+
+  updating = false;
+  btnCheck.disabled  = false;
+  btnUpdate.disabled = false;
+  btnUpdate.innerHTML = '🔄 Update Now';
+
+  if (success) {
+    setStatus('good', '✅', 'Update complete! Reloading page in 3 seconds…');
+    document.getElementById('bannerSuccess').classList.add('visible');
+    document.getElementById('bannerSuccessMsg').textContent =
+      'Update installed successfully! The page will reload automatically.';
+    btnUpdate.classList.add('hidden');
+    // Auto-reload after 3 s so the user sees the freshly updated app
+    setTimeout(() => location.reload(), 3000);
+  } else {
+    setStatus('error', '❌', 'Update failed — see the log above for details.');
+    document.getElementById('bannerFail').classList.add('visible');
+    document.getElementById('bannerFailMsg').textContent =
+      'Something went wrong. Read the log above for instructions on what to do next.';
+  }
+}
+
+/* ── Auto-check on page load (optional, remove if unwanted) ─────────────── */
+// checkUpdate();   // ← uncomment this line to auto-check every time the page opens
+</script>
+</body>
+</html>
